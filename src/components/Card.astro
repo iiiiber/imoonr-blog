@@ -5,17 +5,6 @@ import { formatFeedDate, PostUtils } from "@/utils/postUtils";
 import { SITE } from "@/config";
 import { siteImageHref } from "@/utils/blogImages";
 
-/**
- * 组件属性接口
- *
- * 扩展自 {@link BlogLikeEntry}，包含文章的所有元数据
- *
- * @property openInNewTab - 标题链接是否新标签打开（默认 true）
- * @property itemClass - 额外的 CSS 类名
- * @property hidden - 是否隐藏此卡片
- * @property dateFormat - 日期显示格式：relative（相对时间）或 absolute（绝对时间 YYYY-MM-DD）
- * @property listKind - article：第二行为时间；weekly：第二行为摘要（.pcard-desc）；聚合用 mode="feed"
- */
 type BlogCardProps = BlogLikeEntry & {
   mode?: "post";
   openInNewTab?: boolean;
@@ -107,8 +96,8 @@ if (isFeedCard) {
             <img
               src={avatarSrc}
               alt=""
-              width={40}
-              height={40}
+              width={44}
+              height={44}
               loading="lazy"
               decoding="async"
             />
@@ -117,8 +106,8 @@ if (isFeedCard) {
             <img
               src={listFaviconSrc}
               alt={title}
-              width={40}
-              height={40}
+              width={44}
+              height={44}
               loading="lazy"
               decoding="async"
             />
@@ -196,29 +185,28 @@ if (isFeedCard) {
         )
       }
     </div>
+    <div class="pcard-arrow">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+      </svg>
+    </div>
   </div>
 </li>
 
 <style is:global>
   .pcard {
-    --pcard-thumb-size: 40px;
-    /* 条与条之间的垂直留白（首页与列表页共用） */
-    --pcard-padding-y: 0.06rem;
-    /* 相邻两条之间的收紧量（负 margin-top，仅作用于 .post-cards-list 内第二条起） */
-    --pcard-list-tighten: -0.1rem;
-    --pcard-inner-gap: 0.45rem;
-    --pcard-title-size: 0.86rem;
-    --pcard-title-line-height: 1.36;
+    --pcard-thumb-size: 44px;
+    --pcard-padding-y: 0.875rem;
+    --pcard-padding-x: 1rem;
+    --pcard-inner-gap: 0.875rem;
+    --pcard-title-size: 0.9375rem;
+    --pcard-title-line-height: 1.45;
     --pcard-title-lines: 2;
-    --pcard-title-gap: 0.05rem;
-    /* 第二行：日期 / 聚合元信息 / 周报摘要 — 共用字号与行高 */
-    --pcard-meta-size: 0.72rem;
-    --pcard-meta-line-height: 1.36;
-    /*
-     * min-height 第一路：至少包住缩略图 + 上下留白（原写死 1rem，现可调）
-     * 第二路：标题两行 + 第二行 + padding；max() 取二者较大
-     */
-    --pcard-inner-min-thumb-slack: 0.35rem;
+    --pcard-title-gap: 0.5rem;
+    --pcard-meta-size: 0.8125rem;
+    --pcard-meta-line-height: 1.5;
+    --pcard-inner-min-thumb-slack: 0.25rem;
   }
 
   .pcard {
@@ -235,13 +223,11 @@ if (isFeedCard) {
     display: flex;
     gap: var(--pcard-inner-gap);
     align-items: flex-start;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    padding: var(--pcard-padding-y) 0;
-    transition:
-      background-color 0.2s ease,
-      transform 0.2s ease;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--background);
+    padding: var(--pcard-padding-y) var(--pcard-padding-x);
+    transition: all 0.25s ease;
     min-height: max(
       calc(var(--pcard-thumb-size) + var(--pcard-inner-min-thumb-slack)),
       calc(
@@ -251,11 +237,14 @@ if (isFeedCard) {
           var(--pcard-padding-y) * 2
       )
     );
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--text-secondary) 5%, transparent);
   }
 
   .pcard-inner:hover {
-    background: color-mix(in srgb, var(--accent) 3%, transparent);
-    transform: translateY(-1px);
+    background: var(--background);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 10%, transparent);
   }
 
   .pcard-inner > img {
@@ -267,8 +256,15 @@ if (isFeedCard) {
     flex-shrink: 0;
     align-self: flex-start;
     display: block;
-    border-radius: 9px;
+    border-radius: 10px;
     object-fit: cover;
+    background: var(--background-secondary);
+    padding: 0.35rem;
+    transition: transform 0.25s ease;
+  }
+
+  .pcard-inner:hover > img {
+    transform: scale(1.05);
   }
 
   .pcard-body {
@@ -295,23 +291,25 @@ if (isFeedCard) {
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
+    font-weight: 600;
+    transition: color 0.2s ease;
   }
 
   .pcard-title a {
-    color: var(--accent);
+    color: var(--text-primary);
     text-decoration: none;
+    transition: color 0.2s ease;
   }
 
-  .pcard-title a:hover {
-    color: var(--accent-dark);
-    text-decoration: underline;
+  .pcard-inner:hover .pcard-title a {
+    color: var(--accent);
   }
 
   .pcard-meta {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 0.18rem;
+    gap: 0.25rem;
     min-width: 0;
     font-size: var(--pcard-meta-size);
     line-height: var(--pcard-meta-line-height);
@@ -322,7 +320,7 @@ if (isFeedCard) {
 
   .pcard-meta__time {
     font-weight: 400;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     font-variant-numeric: tabular-nums;
     color: inherit;
   }
@@ -360,7 +358,6 @@ if (isFeedCard) {
     text-decoration: underline;
   }
 
-  /* 仅周报用：第二行摘要，单行省略（仅 briefs + listKind=weekly 会渲染 .pcard-desc） */
   .pcard-desc {
     margin: 0;
     font-size: var(--pcard-meta-size);
@@ -375,10 +372,24 @@ if (isFeedCard) {
 
   .pcard-meta > [aria-hidden="true"] {
     flex: 0 0 auto;
-    opacity: 0.6;
+    opacity: 0.5;
   }
 
-  /* 包裹 Card 的列表（含首页 section > div > ul 等嵌套，主选择器匹配不到） */
+  .pcard-arrow {
+    flex: 0 0 auto;
+    align-self: center;
+    color: var(--text-secondary);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.25s ease;
+  }
+
+  .pcard-inner:hover .pcard-arrow {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--accent);
+  }
+
   .post-cards-list {
     list-style: none;
     margin: 0;
@@ -386,33 +397,34 @@ if (isFeedCard) {
     padding-inline-start: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
-  }
-
-  .post-cards-list > .pcard + .pcard {
-    margin-top: var(--pcard-list-tighten);
+    gap: 0.75rem;
   }
 
   @media (max-width: 640px) {
     .pcard {
-      --pcard-inner-min-thumb-slack: 0.32rem;
-      --pcard-padding-y: 0.1rem;
-      --pcard-list-tighten: -0.08rem;
-      --pcard-inner-gap: 0.48rem;
-      --pcard-title-size: 0.83rem;
-      --pcard-meta-size: 0.7rem;
-      --pcard-title-gap: 0.07rem;
-      --pcard-title-line-height: 1.35;
-      --pcard-meta-line-height: 1.35;
+      --pcard-inner-min-thumb-slack: 0.2rem;
+      --pcard-padding-y: 0.75rem;
+      --pcard-padding-x: 0.875rem;
+      --pcard-inner-gap: 0.75rem;
+      --pcard-title-size: 0.9rem;
+      --pcard-meta-size: 0.7875rem;
+      --pcard-title-gap: 0.4rem;
+      --pcard-title-line-height: 1.42;
+      --pcard-meta-line-height: 1.45;
     }
 
     .pcard-inner > img {
       flex-shrink: 0;
       border-radius: 8px;
+      padding: 0.3rem;
     }
 
     .post-cards-list {
-      gap: 0;
+      gap: 0.6rem;
+    }
+
+    .pcard-arrow {
+      display: none;
     }
   }
 </style>

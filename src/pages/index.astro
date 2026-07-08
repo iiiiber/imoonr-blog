@@ -1,66 +1,387 @@
 ---
-/**
- * 首页
- *
- * @fileoverview 两栏：最近博客、最近周报（取自对应集合）。
- */
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Card from "@/components/Card.astro";
 import { PostUtils } from "@/utils/postUtils";
 import { SITE } from "@/config";
 
-/** 与 /og/index.png 一致 */
 export const pageSlug = "index";
 export const pageTitle = SITE.title;
 export const pageDescription = SITE.description;
 
 const n = SITE.postPerIndex;
 
-const latestPosts = PostUtils.sort(await getCollection("posts")).slice(0, n);
-const latestBriefs = PostUtils.sort(await getCollection("briefs")).slice(0, n);
+const allPosts = await getCollection("posts");
+const allBriefs = await getCollection("briefs");
+const allWiki = await getCollection("wiki");
+
+const latestPosts = PostUtils.sort(allPosts).slice(0, n);
+const latestBriefs = PostUtils.sort(allBriefs).slice(0, n);
+
+const allTags = PostUtils.getUniqueTags(allPosts);
+const hotTags = allTags.sort((a, b) => b.count - a.count).slice(0, 8);
+
+const stats = {
+  posts: allPosts.filter(PostUtils.filter).length,
+  briefs: allBriefs.filter(PostUtils.filter).length,
+  wiki: allWiki.filter(PostUtils.filter).length,
+  tags: allTags.length,
+};
+
+const categories = [
+  { name: "Java", icon: "java.svg", count: allPosts.filter(p => !p.data.draft && p.data.categories.includes("java")).length },
+  { name: "Spring", icon: "spring.svg", count: allPosts.filter(p => !p.data.draft && p.data.categories.includes("spring")).length },
+  { name: "架构", icon: "architecture.svg", count: allPosts.filter(p => !p.data.draft && p.data.categories.includes("architecture")).length },
+  { name: "DevOps", icon: "docker.svg", count: allPosts.filter(p => !p.data.draft && p.data.categories.includes("devops")).length },
+  { name: "AI", icon: "ai.svg", count: allPosts.filter(p => !p.data.draft && p.data.categories.includes("ai")).length },
+];
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
-  <section
-    class="home-index home-index--grid grid w-full min-w-0 grid-cols-1 gap-7 md:grid-cols-2 md:gap-x-8 md:gap-y-7 lg:gap-x-10 lg:gap-y-1"
-  >
-    <section class="min-w-0" aria-labelledby="home-latest-posts-heading">
-      <header class="mb-1.5">
-        <h3 id="home-latest-posts-heading" class="mt-0 mb-0.5 text-base">
-          最近博客
-        </h3>
-        <p class="mt-0.5 mb-0 text-sm leading-snug text-pretty text-muted">
-          仅包含发布在博客目录下的长文（技术、生活等）。
-          <a href="/posts" class="text-accent no-underline hover:underline">
-            全部博客
-          </a>
-        </p>
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">{SITE.title}</h1>
+        <p class="hero-description">{SITE.description}</p>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-value">{stats.posts}</span>
+            <span class="stat-label">博客文章</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.briefs}</span>
+            <span class="stat-label">技术周报</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.wiki}</span>
+            <span class="stat-label">知识库</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.tags}</span>
+            <span class="stat-label">标签</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="categories-section">
+    <header class="section-header">
+      <h3 class="section-title">快速分类</h3>
+      <a href="/tags" class="section-link">查看全部 →</a>
+    </header>
+    <div class="categories-grid">
+      {categories.map(cat => (
+        <a href={`/tags/${cat.name.toLowerCase()}`} class="category-card">
+          <img 
+            src={`/favicons/${cat.icon}`} 
+            alt={cat.name} 
+            width={48} 
+            height={48}
+            class="category-icon"
+          />
+          <span class="category-name">{cat.name}</span>
+          <span class="category-count">{cat.count} 篇</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="home-index home-index--grid">
+    <section class="content-column" aria-labelledby="home-latest-posts-heading">
+      <header class="section-header">
+        <div class="section-title-wrapper">
+          <img src="/favicons/tech.svg" alt="" width={20} height={20} class="section-icon" />
+          <h3 id="home-latest-posts-heading" class="section-title">最近博客</h3>
+        </div>
+        <a href="/posts" class="section-link">全部博客 →</a>
       </header>
-      <ul class="post-cards-list m-0 list-none p-0" aria-label="博客列表">
+      <p class="section-description">仅包含发布在博客目录下的长文（技术、生活等）。</p>
+      <ul class="post-cards-list" aria-label="博客列表">
         {latestPosts.map(post => <Card openInNewTab={false} {...post} />)}
       </ul>
     </section>
 
-    <section class="min-w-0" aria-labelledby="home-latest-briefs-heading">
-      <header class="mb-1.5">
-        <h3 id="home-latest-briefs-heading" class="mt-0 mb-0.5 text-base">
-          最近周报
-        </h3>
-        <p class="mt-0.5 mb-0 text-sm leading-snug text-pretty text-muted">
-          记录每周开发进展、工具尝试和一些阶段性想法。
-          <a href="/briefs" class="text-accent no-underline hover:underline">
-            全部周报
-          </a>
-        </p>
+    <section class="content-column" aria-labelledby="home-latest-briefs-heading">
+      <header class="section-header">
+        <div class="section-title-wrapper">
+          <img src="/favicons/weekly.svg" alt="" width={20} height={20} class="section-icon" />
+          <h3 id="home-latest-briefs-heading" class="section-title">最近周报</h3>
+        </div>
+        <a href="/briefs" class="section-link">全部周报 →</a>
       </header>
-      <ul class="post-cards-list m-0 list-none p-0" aria-label="周报列表">
-        {
-          latestBriefs.map(post => (
-            <Card openInNewTab={false} listKind="weekly" {...post} />
-          ))
-        }
+      <p class="section-description">记录每周开发进展、工具尝试和一些阶段性想法。</p>
+      <ul class="post-cards-list" aria-label="周报列表">
+        {latestBriefs.map(post => (
+          <Card openInNewTab={false} listKind="weekly" {...post} />
+        ))}
       </ul>
     </section>
   </section>
+
+  <section class="tags-section">
+    <header class="section-header">
+      <h3 class="section-title">热门标签</h3>
+      <a href="/tags" class="section-link">全部标签 →</a>
+    </header>
+    <div class="tags-cloud">
+      {hotTags.map(tag => (
+        <a 
+          href={`/tags/${tag.tag}`} 
+          class="tag-item"
+          style={{ 
+            fontSize: `${0.85 + (tag.count / Math.max(...hotTags.map(t => t.count))) * 0.3}rem` 
+          }}
+        >
+          {tag.tagName}
+          <span class="tag-count">{tag.count}</span>
+        </a>
+      ))}
+    </div>
+  </section>
 </Layout>
+
+<style is:global>
+  .hero-section {
+    margin-bottom: 2.5rem;
+    padding: 2.5rem 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, transparent) 0%, color-mix(in srgb, var(--accent) 2%, transparent) 100%);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .hero-content {
+    text-align: center;
+  }
+
+  .hero-title {
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-description {
+    margin: 0 0 1.5rem;
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 3rem;
+    background: var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .hero-section {
+      padding: 1.75rem 0;
+      margin-bottom: 1.75rem;
+    }
+
+    .hero-stats {
+      gap: 1rem 1.5rem;
+    }
+
+    .stat-divider {
+      display: none;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-icon {
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    padding: 0.25rem;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 650;
+    color: var(--text-primary);
+  }
+
+  .section-link {
+    font-size: 0.875rem;
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .section-link:hover {
+    color: var(--accent-dark);
+    text-decoration: underline;
+  }
+
+  .section-description {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .categories-section {
+    margin-bottom: 2.25rem;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--background-secondary);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
+  }
+
+  .category-card:hover {
+    background: color-mix(in srgb, var(--accent) 5%, var(--background-secondary));
+    border-color: var(--border);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+
+  .category-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--background);
+    padding: 0.5rem;
+  }
+
+  .category-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .category-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .home-index {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .home-index {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem 2.5rem;
+    }
+  }
+
+  .content-column {
+    min-width: 0;
+  }
+
+  .tags-section {
+    background: var(--background-secondary);
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  .tags-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
+  }
+
+  .tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--background);
+    border-radius: 9999px;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border);
+  }
+
+  .tag-item:hover {
+    background: color-mix(in srgb, var(--accent) 8%, var(--background));
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .tag-item .tag-count {
+    font-size: 0.7rem;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    padding: 0.1rem 0.35rem;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+</style>
